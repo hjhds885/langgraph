@@ -1419,16 +1419,7 @@ async def main():
     if "silence_threshold" not in st.session_state:
         st.session_state.silence_threshold = 0.5 # 無音時間のデフォルト
 
-    # 環境変数設定 (初回のみ)
-    with st.spinner("環境変数を設定中..."):
-        try:
-            my_environments.setup_environment()
-            #info_disp.info("環境変数をロードしました。")
-        except Exception as e:
-            st.sidebar.error(f"環境変数の設定に失敗: {e}")
-            st.error("続行できません。環境変数を確認してください。")
-            st.stop()
-
+    
     # モデルリスト取得 (キャッシュ)
     @st.cache_resource
     def load_models():
