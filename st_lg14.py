@@ -1,14 +1,3 @@
-# chatbot_langgraph28-1.py を Streamlit アプリ化
-# LangGraph/ReActの stream メソッドを使う限り、文節や句読点ごとの 滑らかな ストリーミング表示は困難です。
-# 現在のコードは、思考ステップごとやメッセージ更新ごとに表示を更新する、現実的な実装となっています。
-# より細かいストリーミングが必要な場合は、エージェント/グラフの機能（ツール連携、複雑な状態管理など）を諦めて、
-# LLMの stream() を直接使う必要があります。
-# ご提示の修正コード (st_lg13-1.py) に含まれる if new_content != full_response: のチェックは、
-# 不要なUI更新を減らすために有効です。
-# 現在のコードは、LangGraph/ReActの仕組みの中でのベストエフォートなストリーミング表示と言えます。
-# 期待されているような細かい粒度での表示にはなっていないかもしれませんが、
-# フレームワークの制約上、ある程度は仕方がない部分となります。
-
 import streamlit as st
 from streamlit_webrtc import (
     WebRtcMode,
@@ -51,7 +40,7 @@ import tiktoken
 from datetime import datetime, timedelta
 import uuid
 # 他のpythonコードを呼び込む
-import my_llms, my_querys, my_environments, my_tools
+#import my_llms, my_querys, my_environments, my_tools
 import os
 import requests
 import traceback # エラー詳細表示のため
@@ -72,6 +61,495 @@ import re # 追加
 import torch
 import torchaudio
 import torchvision
+
+from langchain.chat_models import init_chat_model
+from langchain_core.rate_limiters import InMemoryRateLimiter
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import GoogleGenerativeAI
+from langchain_groq import ChatGroq
+from langchain_cohere import ChatCohere
+from langchain_huggingface import HuggingFaceEndpoint,ChatHuggingFace
+
+#ツール
+from langchain.agents import tool,Tool
+from langchain_core.tools import tool
+#from langchain.tools import Tool
+from langchain_community.agent_toolkits.load_tools import load_tools
+from pydantic import BaseModel, Field
+from langchain_community.tools.tavily_search import TavilySearchResults
+from metaphor_python import Metaphor
+from langchain_community.utilities import SerpAPIWrapper
+from newsapi import NewsApiClient
+from exa_py import Exa
+#from langchain.tools.yahoo_finance_news import YahooFinanceNewsTool #old
+#from langchain.tools import YahooFinanceNewsTool
+from langchain_community.tools import YahooFinanceNewsTool
+#from langchain.tools import GoogleSerperTool, SearchApiTool old
+#from langchain_community.tools import SearchApiTool
+from langchain_community.utilities.google_search import GoogleSearchAPIWrapper
+#from langchain_community.utilities import GoogleSerperAPIWrapper #エラー
+from serpapi import GoogleSearch
+from langchain_community.tools import WikipediaQueryRun
+from langchain_community.utilities.wolfram_alpha import WolframAlphaAPIWrapper
+from langchain_core.utils.function_calling import convert_to_openai_tool
+#import os
+from datetime import datetime, timedelta
+from typing import Any, Dict, List,Tuple
+import requests
+#import html2text
+
+# Toolの設定をまとめて行う関数
+def setup_tools():
+    ######################################################
+    #tools リストは、langchain の Tool オブジェクトのリスト
+    # 利用するツールの定義
+    # カスタムの検索ロジックを実装したい場合はTool()を使用する
+    
+    #openai_tools リストは、convert_to_openai_tool 関数によって
+    # OpenAI のツール形式に変換されたツール
+    
+    #Google: 長所は膨大な情報と世界的な利用。短所はプライバシーに関する懸念。100件無料
+    #Yahoo!: 長所は使いやすさと情報の豊富さ。短所はGoogle依存。
+    #Bing: 長所はマルチメディアコンテンツの検索。短所はGoogleに及ばないシェア。
+    #DuckDuckGo: 長所はプライバシー保護。短所は検索結果の精度。
+    #GoogleのSERPAPIとSEARCHAPIは、どちらもGoogle検索結果を取得するためのAPIですが、
+    # 価格や機能に違いがあります。
+    # SERPAPIはリアルタイムでの検索結果取得や構造化データの解析を行い、
+    # より多くの機能を提供しますが、価格は高めに設定されています。
+    # 一方、SEARCHAPIは競争力のある価格と豊富な機能を提供しています。
+    ######################################################
+    class GetWeather(BaseModel):
+        '''Get the current weather in a given location'''
+
+        location: str = Field(
+            ..., description="The city and state, e.g. Komatsu , Japan" #NG Ishikawa
+        )
+    @tool(args_schema=GetWeather)
+    def get_weather(location: str) -> str:
+        """Get the current and future weather in a given location."""
+        print(f"\n天気情報を取得するツール(get_weather)を使っています。")
+        #st.session_state.use_tool_name="get_weather"
+        print("use_tool_name:","get_weather")
+        #st.write("use_tool_name:get_weather")
+        # OpenWeatherMap APIキーを設定（環境変数から取得）
+        api_key = os.environ["OPENWEATHERMAP_API_KEY"] #os.environ.get("OPENWEATHERMAP_API_KEY")
+        if not api_key:
+            return "Error: OPENWEATHERMAP_API_KEY environment variable not set."
+
+        # ロケーションを都市名と国コードに分割（例：Komatsu Ishikawa, JP）
+        location_parts = location.split(",")
+        city_name = location_parts[0].strip()
+        country_code = location_parts[1].strip() if len(location_parts) > 1 else ""
+
+        # APIエンドポイントとパラメータを設定
+        base_url = "http://api.openweathermap.org/data/2.5/forecast" #修正
+        params = {
+            "q": f"{city_name},{country_code}",
+            "appid": api_key,
+            "units": "metric",  # 摂氏で取得
+            "lang": "ja" #日本語で取得
+        }
+
+        try:
+            # APIリクエストを送信
+            response = requests.get(base_url, params=params)
+            response.raise_for_status()  # エラーレスポンスをチェック
+
+            # JSONレスポンスを解析
+            weather_data = response.json()
+
+            # 天気情報を抽出
+            # 明日の天気情報を取得
+            tomorrow_weather = None
+            for forecast in weather_data["list"]:
+                # タイムスタンプから日付を取得
+                forecast_date = forecast["dt_txt"].split(" ")[0]
+                # 明日の日付を取得
+                tomorrow = datetime.now() + timedelta(days=1)
+                tomorrow_str = tomorrow.strftime("%Y-%m-%d")
+
+                if forecast_date == tomorrow_str:
+                    tomorrow_weather = forecast
+                    break
+
+            if tomorrow_weather:
+                description = tomorrow_weather["weather"][0]["description"]
+                temperature = tomorrow_weather["main"]["temp"]
+                humidity = tomorrow_weather["main"]["humidity"]
+                wind_speed = tomorrow_weather["wind"]["speed"]
+
+                result = (
+                    f"{location}の明日の天気は{description}です。\n"
+                    f"気温: {temperature}℃\n"
+                    f"湿度: {humidity}%\n"
+                    f"風速: {wind_speed}m/s"
+                )
+            else:
+                result = f"{location}の明日の天気情報が見つかりませんでした。"
+
+            # 現在の天気情報を取得
+            base_url = "http://api.openweathermap.org/data/2.5/weather"
+            response = requests.get(base_url, params=params)
+            #print("response.url=",response.url)
+            print("response.status_code=",response.status_code) #200
+            #print("response.text=",response.text)
+            #print("weather_data=",weather_data)
+            response.raise_for_status()
+            weather_data = response.json()
+            description = weather_data["weather"][0]["description"]
+            temperature = weather_data["main"]["temp"]
+            humidity = weather_data["main"]["humidity"]
+            wind_speed = weather_data["wind"]["speed"]
+            result += (
+                f"\n{location}の現在の天気は{description}です。\n"
+                f"気温: {temperature}℃\n"
+                f"湿度: {humidity}%\n"
+                f"風速: {wind_speed}m/s"
+            )
+            return result
+
+        except requests.exceptions.RequestException as e:
+            return f"Error: Could not retrieve weather information for {location}. {e}"
+        except (KeyError, IndexError) as e:
+            return f"Error: Could not parse weather information for {location}. {e}"
+        except Exception as e:
+            return f"An unexpected error occurred: {e}"
+
+    ######################################################
+    # Wolfram Alpha
+    # Wolfram Alpha Tool
+    class WolframAlphaInput(BaseModel):
+        """Wolfram Alpha の入力."""
+        query: str = Field(...,
+            description="""Wolfram Alpha に送信するクエリ数学、科学、歴史、地理、文化など、
+            幅広い分野の質問に答えるのに役立ちます。日付や天気には使用しないでください。""")
+
+    wolfram_alpha_wrapper = WolframAlphaAPIWrapper()
+    wolfram_alpha_tool = Tool(
+        name="wolfram_alpha",
+        func=wolfram_alpha_wrapper.run,
+        description="""数学、科学、歴史、地理、文化など、幅広い分野の質問に答えるのに役立ちます。
+                        日付や天気には使用しないでください。""",
+        args_schema=WolframAlphaInput,
+    )
+    ####################################################################################
+    #Google Serper SERPAPI_API_KEY
+    #serp_search = GoogleSerperAPIWrapper(serper_api_key=os.environ["SERPAPI_API_KEY"])#403
+    # エラーになる
+
+    @tool
+    def search_q(query: str) -> str:
+        #"""Google検索を実行し、検索結果のテキストスニペットのリストを返す関数"""
+        """Web検索を実行し、関連性の高いテキスト情報を返す関数 (Google Search または Exa)"""
+        google_search_failed = False
+        search_result_text = ""
+        # --- Google Search を試行 ---
+        #st.info(f"Web検索を実行中: {query}") # Streamlit UI に表示
+        print(f"Web検索を実行中: {query}")
+        serpapi_key = os.environ.get("SERPAPI_API_KEY")
+        if not serpapi_key:
+            #st.warning("SERPAPI_API_KEY が設定されていません。Exa検索を試みます。")
+            print("SERPAPI_API_KEY が設定されていません。Exa検索を試みます。")
+            google_search_failed = True
+        else:
+            params = {
+            "api_key": os.environ.get("SERPAPI_API_KEY"),
+            "engine": "google", "q": query, "location": "Komatsu, Ishikawa, Japan",
+            "google_domain": "google.com", "gl": "jp", "hl": "ja"
+            }
+            try:
+                search = GoogleSearch(params)
+                results = search.get_dict()
+                # organic_results が存在するか確認
+                organic_results = results.get('organic_results', [])
+
+                #snippets = [item.get('snippet', '') for item in results.get('organic_results', []) if item.get('snippet')]
+                snippets = [item.get('snippet', '') for item in organic_results if item.get('snippet')]
+                if snippets:
+                    search_result_text = "\n".join(snippets)
+                else:
+                    # スニペットがない場合、タイトルとリンクを返す
+                    titles_links = [f"{item.get('title', '')}: {item.get('link', '')}" for item in organic_results]
+                    if titles_links:
+                        search_result_text = "\n".join(titles_links)
+                    else:
+                        #st.warning("Google検索結果が見つかりませんでした。")
+                        print("Google検索結果が見つかりませんでした。")
+                        google_search_failed = True # 結果なしも失敗とみなす
+            except requests.exceptions.HTTPError as http_err: # requests由来のHTTPErrorを捕捉
+                #st.error(f"Google検索HTTPエラー: {http_err}")
+                print(f"Google検索HTTPエラー: {http_err}")
+                if http_err.response.status_code == 403:
+                    #st.warning("Google検索で403エラーが発生しました。Exa検索にフォールバックします。")
+                    print("Google検索で403エラーが発生しました。Exa検索にフォールバックします。")
+                    google_search_failed = True
+                else:
+                    # 403以外のHTTPエラーもExaにフォールバック
+                    #st.warning(f"Google検索でHTTPエラー({http_err.response.status_code})が発生しました。Exa検索にフォールバックします。")
+                    print(f"Google検索でHTTPエラー({http_err.response.status_code})が発生しました。Exa検索にフォールバックします。")
+                    google_search_failed = True
+            except Exception as e: # その他のエラー (serpapiライブラリ内のエラーなど)
+                #st.error(f"Google検索エラー: {e}")
+                print(f"Google検索エラー: {e}")
+                google_search_failed = True
+
+            # --- Google Search が失敗した場合、Exa Search にフォールバック ---
+            if google_search_failed:
+                #st.info("Exa検索にフォールバックします...")
+                print("Exa検索にフォールバックします...")
+                exa_results_response = exa_search(query) # exa_search関数を呼び出す
+
+                # Exa の結果 (SearchResponse オブジェクト) からテキスト情報を抽出
+                exa_contents = []
+                # exa_results_response.results がリストであることを確認
+                if hasattr(exa_results_response, 'results') and isinstance(exa_results_response.results, list):
+                    for result in exa_results_response.results:
+                        # result オブジェクトに必要な属性があるか確認
+                        content_part = ""
+                        if hasattr(result, 'title') and result.title:
+                            content_part += f"Title: {result.title}\n"
+                        if hasattr(result, 'url') and result.url:
+                            content_part += f"URL: {result.url}\n"
+                        if hasattr(result, 'text') and result.text:
+                            # 本文は長すぎる可能性があるので500文字に切り詰める
+                            content_part += f"Content: {result.text[:500]}..."
+                        if content_part: # 何かしらの情報があれば追加
+                            exa_contents.append(content_part.strip())
+
+                if exa_contents:
+                    search_result_text = "\n\n".join(exa_contents)
+                else:
+                    #st.warning("Exa検索でも結果が見つかりませんでした。")
+                    print("Exa検索でも結果が見つかりませんでした。")
+                    search_result_text = "Web検索で関連情報が見つかりませんでした。" # 最終的なフォールバックメッセージ
+
+            return search_result_text
+
+    
+    def bk_search_q(query):
+        """Google検索を実行し、検索結果のテキストスニペットのリストを返す関数"""
+        params = {
+            "api_key": os.environ["SERPAPI_API_KEY"],
+            "engine": "google",
+            "q": query,
+            "location": "Komatsu, Ishikawa, Japan",
+            "google_domain": "google.com",
+            "gl": "jp",
+            "hl": "ja"
+        }
+        try:
+            search = GoogleSearch(params)
+            results = search.get_dict()
+            # 検索結果から関連性の高いテキスト情報 (スニペット) を抽出
+            snippets = [item.get('snippet', '') for item in results.get('organic_results', []) if item.get('snippet')]
+            #print(snippets)
+            if not snippets:
+                print("Warning: No snippets found in search results.")
+            return snippets
+        except Exception as e:
+            print(f"Error during search: {e}")
+            return [] # エラー時は空のリストを返す
+
+    class SerperInput(BaseModel):
+        """GoogleSerper の入力."""
+        query: str = Field(...,
+            description="GoogleSerper に送信するクエリ.useful for when you need to ask with search")
+
+    serper_tool = Tool(
+        name="web_search",
+        func=search_q,  # search.run,
+        description="最新のWeb情報を検索",
+        args_schema=SerperInput, #ここがポイント（クラス作成してquery入力）
+    )
+    #serper_tool = Tool(
+            #name="Intermediate Answer",
+            #func=serp_search.run,
+            #description="useful for when you need to ask with search",
+        #)
+    ####################################################################################
+    # define the tools available to the agent - we're defining a single tool, exa_search
+    # create the exa client
+    #os.environ["EXA_API_KEY"] = "d74cc435-f3d2-4d8d-a21e-b6a66230c256"
+    exa = Exa(api_key=os.environ["EXA_API_KEY"])
+    # https://docs.exa.ai/reference/python-sdk-specification#search_and_contents-method
+    def exa_search(query: str) -> Dict[str, Any]:
+        #st.session_state.use_tool_name="exa_search"
+        print("use_tool_name:",exa_search)
+        #st.write("use_tool_name:",st.session_state.use_tool_name)
+        return exa.search_and_contents(query=query, type='auto', highlights=True,text= True)
+        #highlights=Falseだと、URLの回答のみ
+
+    exa_tool = [
+        {
+            "type": "function",
+            "function": {
+                "name": "exa_search",
+                "description": "Perform a search query on the web, and retrieve the world's most relevant information.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The search query to perform.",
+                        },
+                    },
+                    "required": ["query"],
+                },
+            },
+        }
+    ]
+    #tools リストに exa_tool を追加するには、以下の手順で行います。
+    #修正手順
+    #exa_tool を Tool オブジェクトに変換する関数を作成する。
+    #exa_tool を tools リストに追加する。
+    #openai_tools の作成を修正する。
+    #exa_toolをToolオブジェクトに変換する関数
+    def exa_tool_to_tool_object(exa_tool_def):
+        def exa_search_wrapper(query: str) -> str:
+            # exa_search関数を呼び出し、結果を文字列に変換して返す
+            result = exa_search(query)
+            return str(result)
+
+        # Toolオブジェクトを作成して返す
+        return Tool(
+            name=exa_tool_def[0]["function"]["name"],
+            func=exa_search_wrapper,
+            description=exa_tool_def[0]["function"]["description"],
+            )
+    #exa_toolをToolオブジェクトに変換
+    exa_tool_object = exa_tool_to_tool_object(exa_tool)
+    ##########################################################################################
+    # Tavily Search
+    class TavilySearchInput(BaseModel):
+        """Input for tavily search."""
+
+        query: str = Field(..., description="search query to look up")
+
+
+    tavily_search = TavilySearchResults(
+        max_results=2,
+        include_answer=True,
+        include_raw_content=True,
+    )
+    # TavilySearchResults を Tool でラップ
+    # Langchain形式のToolオブジェクトにする
+    tavily_tool = Tool(
+        name="tavily_search_results_json",
+        func=tavily_search.run,
+        description="useful for when you need to answer questions about current events",
+        args_schema=TavilySearchInput,
+    )
+    #########################################################################################
+    # News API
+    class NewsSearchInput(BaseModel):
+        """Input for news search."""
+        query: str = Field(..., description="search query to look up in news")
+
+    # News API のクライアントを初期化
+    newsapi = NewsApiClient(api_key=os.environ["NEWSAPI_API_KEY"])
+    #os.environ["NEWSAPI_API_KEY"])
+
+    @tool(args_schema=NewsSearchInput)
+    def get_news(query: str) -> str:
+        """Get the latest news based on a query."""
+        #st.session_state.use_tool_name="get_news"
+        print("use_tool_name:","get_news")
+        #st.write("use_tool_name:",st.session_state.use_tool_name)
+        try:
+            # NewsApiClientを使用してニュースを取得。日本語指定不可(LLMで翻訳させる)
+            news = newsapi.get_everything(q=query, language='en', sort_by='relevancy', page=1)
+            # 最初のニュース記事を返す
+            if news['articles']:
+                result = ""
+                for article in news['articles']:
+                    result += f"Title: {article['title']}\nURL: {article['url']}\n\n"
+                return result
+            else:
+                return "No news found for the given query."
+        except Exception as e:
+            return f"Error fetching news: {e}"
+    ########################################################    
+    #LangchainのToolオブジェクトのリスト
+    #tools =[get_weather,exa_tool_object,tavily_tool, wolfram_alpha_tool, get_news] #+ [fetch_page] serper_tool + 
+    #tools =[get_weather,tavily_tool, serper_tool,wolfram_alpha_tool, get_news] 
+    tools =[get_weather,search_q, exa_tool_object,get_news] 
+    serp_tool = [serper_tool]
+    # Tool を OpenAI 形式に変換
+    openai_tools = [convert_to_openai_tool(t) for t in tools] 
+    return  tools,openai_tools,serp_tool
+
+
+rate_limiter = InMemoryRateLimiter(
+    requests_per_second=0.1,  # <-- Super slow! We can only make a request once every 10 seconds!!
+    check_every_n_seconds=0.1,  # Wake up every 100 ms to check whether allowed to make a request,
+    max_bucket_size=10,  # Controls the maximum burst size.
+)
+
+#########################################################################
+#########################################################################
+#model = ChatAnthropic(model_name="claude-3-sonnet-20240229")
+#model = ChatOpenAI(
+            #model="gpt-4o",
+            #api_key= st.secrets.key.OPENAI_API_KEY,
+            #max_completion_tokens=12800,  #指定しないと短い回答になったり、途切れたりする。
+            #streaming=True,
+        #)
+# モデルの初期化とリストへの格納をまとめて行う関数
+def initialize_models():
+    
+    models = {
+        #モデルの選定条件：toolが使えるものが絶対条件、次に画像認識できるもの。費用がかからないのが望ましい
+        #chatモデル(一連のメッセージを入力として使用し、メッセージを出力として返す言語モデル)でないとダメ 理由：忘れた
+        #langchainでやるなら、それ対応のchat model
+        #https://console.groq.com/docs/models
+        #https://docs.mistral.ai/getting-started/models/models_overview/
+        ######################################################################################################
+        ######################################################################################################
+        #2.2 ツール対応のマルチモーダルモデル　img,tool Good
+        #(無料枠内で)無料：
+        #多言語、マルチターンの会話、ツールの使用、JSON モードをサポートする、テキストと画像の両方の入力を処理できる強力なマルチモーダル モデルです。
+        #groqつながり悪い "meta-llama/llama-4-scout-17b-16e-instruct": (init_chat_model("meta-llama/llama-4-scout-17b-16e-instruct", model_provider="groq"),0,0,0,128000), #TPM): Limit 30000, 1,000万トークン（プレビューでは128Kに制限）
+        #groqつながり悪い "meta-llama/llama-4-maverick-17b-128e-instruct": (init_chat_model("meta-llama/llama-4-maverick-17b-128e-instruct", model_provider="groq"), 0,0,0,6000), #(TPM): Limit 6000, Requested 11999
+        "pixtral-12b-2409": (init_chat_model("pixtral-12b-2409", model_provider="mistralai"),0,0,0,128000),
+        "mistral-small-latest": (init_chat_model("mistral-small-latest", model_provider="mistralai"),0,0,0,131000), #Best 適応的思考、費用対効果
+        #######################################################################################################
+        #https://ai.google.dev/gemini-api/docs/models?hl=ja&_gl=1*17qcedu*_up*MQ..*_ga*ODUwNDc5MzM2LjE3NDUxNDczNjU.*_ga_P1DBVKWT6V*MTc0NTE0NzM2NS4xLjAuMTc0NTE0NzM2NS4wLjAuMTIzMzU0MzAwMA..#gemini-2.5-pro-preview-03-25
+        # Gemini モデルの場合、1 個のトークンは約 4 文字に相当します。100 個のトークンは、約 60 ～ 80 ワード（英語）です。
+        "gemini-2.5-pro-exp-03-25": (init_chat_model("google_vertexai:gemini-2.5-pro-exp-03-25", temperature=0),0,0,0,1048576), #高度なコーディング
+        "gemini_2.5_flash": (init_chat_model("google_vertexai:gemini-2.5-flash-preview-04-17", temperature=0),0.15,0,3.5,1048576),
+        #"gemini_2_flash": (init_chat_model("google_vertexai:gemini-2.0-flash", temperature=0),0,0,0,1000000), #リアルタイム ストリーミング、マルチモーダル生成
+        #"gemini-1.5-pro": (init_chat_model("google_vertexai:gemini-1.5-pro", temperature=0),0,0,0,32000), #200 万トークン　無料 32000
+        #"gemini-1.5-pro": (ChatGoogleGenerativeAI(model="gemini-1.5-pro",temperature=0,max_retries=2),0,0,0,32000), #img,tool(1つだけ？) OK
+        #有料:
+        "gpt-4.1-mini": (init_chat_model("openai:gpt-4.1-mini") , 0.4,0.1,1.6,1047576), #コスパ良い
+        "o4-mini": (init_chat_model("openai:o4-mini"),1.1,0.275,4.4,200000), #コスパ良い
+        "gpt-4.1": (init_chat_model("openai:gpt-4.1"),2.0,0.5,8.0,1047576), #gpt-4oより安い
+        #"gpt-4o": (init_chat_model("openai:gpt-4o"),2.5,1.25,10,128000), #3月に9.132$(1370円)
+        #廃版 "gpt4r5": init_chat_model("openai:gpt-4.5-preview"), #3/15ごろに5.254$(788円)
+        #高額すぎる "o1": (init_chat_model("openai:o1"), 15,7.5,60,200000), #3/15ごろに8.921$(1338円)
+        #高額 "ChatGPT-4o": (init_chat_model("openai:ChatGPT-4o"), 5,0,15,128000),
+        #高額 "o3": (init_chat_model("openai:o3"), 10,2.5,40,200000),
+        #img NG "o1-mini": (init_chat_model("openai:o1"), 1.1,0.55,4.4,128000),
+        #img NG "o3-mini": (init_chat_model("openai:o3-mini"),1.1,0.55,4.4,200000),
+
+        #'Your credit balance is too low to access the Anthropic API.
+        #高い "claude-3-7-sonnet": (init_chat_model("anthropic:claude-3-7-sonnet-latest", temperature=0),3,0,15,200000),
+        #高い "claude-3-5-sonnet": (init_chat_model("anthropic:claude-3-5-sonnet-latest", temperature=0),3,0,15,200000),
+        #"claude-3-5-haiku": (init_chat_model("anthropic:claude-3-5-haiku-latest", temperature=0),0.8,0,4,200000),
+        #"claude-3-haiku": (init_chat_model("anthropic:claude-3-haiku-latest", temperature=0),0.8,0,4,200000),
+
+        #日本語暴走 "neva_22b": (init_chat_model("nvidia/neva-22b", model_provider="nvidia"),0,0,0,158000), #NVIDIA版LLaVAモデル
+        #日本語良くない "microsoft/phi-4-multimodal-instruct": (init_chat_model("microsoft/phi-4-multimodal-instruct", model_provider="nvidia"),0,0,0,128000)
+        ###################################################################################
+        #2.1 ツール非対応のマルチモーダルモデルとして動作 imgのみOK,
+        #百名山標高順回答不正解、only 4 image(s) can be used per conversation
+        "c4ai-aya-vision-32b":(init_chat_model("c4ai-aya-vision-32b", model_provider="cohere"),0,0,0,16000), #コンテキストの長さ: 16K、
+        #Groqのならツール対応 "meta/llama-4-maverick-17b-128e-instruct":(init_chat_model("meta/llama-4-maverick-17b-128e-instruct", model_provider="nvidia"),0,0,0,1000000), #not known to support tools
+        ################################################################################## 
+    }
+    return models
+
+
 
 # 関数でメモリ使用量を取得
 def get_memory_usage():
@@ -284,7 +762,7 @@ def search_q(query: str) -> str:
 
 # --- ツールリスト ---
 # Streamlit用に human_assistance を除外
-tools_std,openai_tools,serp_tool = my_tools.setup_tools() # 元のツール設定関数を呼び出す
+tools_std,openai_tools,serp_tool = setup_tools() # 元のツール設定関数を呼び出す
 tools_list = [t for t in tools_std if t.name != "human_assistance"]
 #tools_list = [get_weather, search_q] # 直接定義する場合
 
@@ -930,7 +1408,7 @@ async def main():
     # モデルリスト取得 (キャッシュ)
     @st.cache_resource
     def load_models():
-        models = my_llms.initialize_models()
+        models = initialize_models()
         return models
 
     #info_disp.info("LLMモデルを初期化中...")
