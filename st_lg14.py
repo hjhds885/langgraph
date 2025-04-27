@@ -67,7 +67,7 @@ from langchain_core.rate_limiters import InMemoryRateLimiter
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_google_genai import GoogleGenerativeAI
 from langchain_groq import ChatGroq
-from langchain_cohere import ChatCohere
+#from langchain_cohere import ChatCohere
 from langchain_huggingface import HuggingFaceEndpoint,ChatHuggingFace
 
 #ツール
