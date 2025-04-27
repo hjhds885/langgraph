@@ -34,7 +34,7 @@ google_search_results==2.4.2
 googleapis-common-protos==1.63.2
 exa-py==1.9.1
 opencv-python-headless==4.11.0.86
-av
+av==14.2.0
 time
 tiktoken==0.8.0
 datetime
