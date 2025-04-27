@@ -79,7 +79,8 @@ from pydantic import BaseModel, Field
 from langchain_community.tools.tavily_search import TavilySearchResults
 from metaphor_python import Metaphor
 from langchain_community.utilities import SerpAPIWrapper
-from newsapi import NewsApiClient
+#from newsapi import NewsApiClient
+from newsapi.newsapi_client import NewsApiClient
 from exa_py import Exa
 #from langchain.tools.yahoo_finance_news import YahooFinanceNewsTool #old
 #from langchain.tools import YahooFinanceNewsTool
