@@ -98,6 +98,29 @@ from typing import Any, Dict, List,Tuple
 import requests
 #import html2text
 
+# streamlit cloudの環境変数にAPIキーなどを設定 (必要であれば)
+os.environ["OPENWEATHERMAP_API_KEY"] = st.secrets["OPENWEATHERMAP_API_KEY"]
+os.environ["SERPAPI_API_KEY"] = st.secrets["SERPAPI_API_KEY"]
+os.environ["EXA_API_KEY"] = st.secrets["EXA_API_KEY"]
+os.environ["NEWSAPI_API_KEY"] = st.secrets["NEWSAPI_API_KEY"]
+os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+os.environ["ANTHROPIC_API_KEY"] = st.secrets["ANTHROPIC_API_KEY"]
+os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
+os.environ["COHERE_API_KEY"] = st.secrets["COHERE_API_KEY"]
+os.environ["NVIDIA_API_KEY"] = st.secrets["NVIDIA_API_KEY"]
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
+os.environ["LANGSMITH_API_KEY"] = st.secrets["LANGSMITH_API_KEY"]
+os.environ["WOLFRAM_ALPHA_APPID"] = st.secrets["WOLFRAM_ALPHA_APPID"]
+os.environ["LANGCHAIN_API_KEY"] = st.secrets["LANGCHAIN_API_KEY"]
+os.environ["GOOGLE_CLOUD_PROJECT"] = st.secrets["GOOGLE_CLOUD_PROJECT"]
+os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+os.environ["FIREWORKS_API_KEY"] = st.secrets["FIREWORKS_API_KEY"]
+os.environ["MISTRAL_API_KEY"] = st.secrets["MISTRAL_API_KEY"]
+os.environ["TOGETHER_API_KEY"] = st.secrets["TOGETHER_API_KEY"]
+os.environ["SEARCHAPI_API_KEY"] = st.secrets["SEARCHAPI_API_KEY"]
+os.environ["METAPHOR_API_KEY"] = st.secrets["METAPHOR_API_KEY"]
+os.environ["TAVILY_API_KEY"] = st.secrets["TAVILY_API_KEY"]
+
 # Toolの設定をまとめて行う関数
 def setup_tools():
     ######################################################
