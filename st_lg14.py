@@ -534,7 +534,7 @@ def initialize_models():
         #多言語、マルチターンの会話、ツールの使用、JSON モードをサポートする、テキストと画像の両方の入力を処理できる強力なマルチモーダル モデルです。
         #groqつながり悪い "meta-llama/llama-4-scout-17b-16e-instruct": (init_chat_model("meta-llama/llama-4-scout-17b-16e-instruct", model_provider="groq"),0,0,0,128000), #TPM): Limit 30000, 1,000万トークン（プレビューでは128Kに制限）
         #groqつながり悪い "meta-llama/llama-4-maverick-17b-128e-instruct": (init_chat_model("meta-llama/llama-4-maverick-17b-128e-instruct", model_provider="groq"), 0,0,0,6000), #(TPM): Limit 6000, Requested 11999
-        "pixtral-12b-2409": (init_chat_model("pixtral-12b-2409", model_provider="mistralai"),0,0,0,128000),
+        #回答へた　"pixtral-12b-2409": (init_chat_model("pixtral-12b-2409", model_provider="mistralai"),0,0,0,128000),
         "mistral-small-latest": (init_chat_model("mistral-small-latest", model_provider="mistralai"),0,0,0,131000), #Best 適応的思考、費用対効果
         #######################################################################################################
         #https://ai.google.dev/gemini-api/docs/models?hl=ja&_gl=1*17qcedu*_up*MQ..*_ga*ODUwNDc5MzM2LjE3NDUxNDczNjU.*_ga_P1DBVKWT6V*MTc0NTE0NzM2NS4xLjAuMTc0NTE0NzM2NS4wLjAuMTIzMzU0MzAwMA..#gemini-2.5-pro-preview-03-25
@@ -1708,7 +1708,7 @@ async def main():
         # 音声入力ループ
         status_indicator = st.empty()
         #amp_indicator = st.sidebar.empty() # 音声振幅表示用
-        status_indicator.write("🎤 話してください...又は以下にテキストを入力してください。")
+        status_indicator.write("🎤 何か話してください...又は以下にテキストを入力してください。")
         sound_chunk = pydub.AudioSegment.empty()
         #recognized_text = asyncio.run(process_audio_loop_with_silence_detection(
         recognized_text = await process_audio_loop_with_silence_detection( # ★ asyncio.run を await に変更
@@ -1804,7 +1804,7 @@ async def main():
                     try:
                         # --- Streaming Execution ---
                         if is_react_agent:
-                            with st.spinner("ReAct Agent 実行中..."):
+                            with st.spinner("🧠ReAct Agent 実行中..."):
                                 events = graph_instance.stream(
                                     {"messages": [current_human_message]},
                                     config=config,
@@ -1828,7 +1828,7 @@ async def main():
                                 if st.session_state.output_method == "テキスト":
                                     message_placeholder.markdown(full_response)
                         else: # LangGraph or Enhanced Graph
-                            spinner_text = "Enhanced Graph 実行中..." if use_enhanced_graph else "LangGraph 実行中..."
+                            spinner_text = "🧠Enhanced Graph 実行中..." if use_enhanced_graph else "🧠LangGraph 実行中..."
                             with st.spinner(spinner_text):
                                 #print("current_human_message=",current_human_message)
                                 events = graph_instance.stream(
@@ -1941,8 +1941,10 @@ async def main():
         st.error("グラフまたはエージェントが初期化されていません。")
         with history_container:
             st.error("グラフまたはエージェントが初期化されていません。")
-    time.sleep(1) #ok 3秒
-    st.rerun()
+    print("処理終了")
+    time.sleep(2) #ok 3秒 1秒 Padで不具合あるかも
+    st.rerun() #これがないと音声入力ルーチンにならない。        
+    
 # --- main 関数の呼び出し ---
 if __name__ == "__main__":
     #main()
