@@ -1377,7 +1377,7 @@ async def main():
             rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
             media_stream_constraints={"video": True, "audio": True},
             video_processor_factory=VideoTransformer,
-            async_processing=True, # Streamlitアプリの応答性を保つため非同期処理を推奨  
+            #async_processing=True, # Streamlitアプリの応答性を保つため非同期処理を推奨  
         )
     if not webrtc_ctx.state.playing :
         st.sidebar.warning("Webカメラを開始してください。")
