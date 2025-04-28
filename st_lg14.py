@@ -1421,7 +1421,7 @@ async def main():
 
     
     # モデルリスト取得 (キャッシュ)
-    @st.cache_resource
+    #@st.cache_resource
     def load_models():
         models = initialize_models()
         return models
