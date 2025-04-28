@@ -121,7 +121,7 @@ os.environ["TOGETHER_API_KEY"] = st.secrets.key["TOGETHER_API_KEY"]
 os.environ["SEARCHAPI_API_KEY"] = st.secrets.key["SEARCHAPI_API_KEY"]
 os.environ["METAPHOR_API_KEY"] = st.secrets.key["METAPHOR_API_KEY"]
 os.environ["TAVILY_API_KEY"] = st.secrets.key["TAVILY_API_KEY"]
-
+os.environ["USER_AGENT"] = st.secrets.key["USER_AGENT"]
 # Toolの設定をまとめて行う関数
 def setup_tools():
     ######################################################
