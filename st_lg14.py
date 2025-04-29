@@ -1370,7 +1370,7 @@ async def main():
     with st.sidebar:
         st.header("Webcam Stream")
         webrtc_ctx = webrtc_streamer(
-            key="speech-to-text-w-video",
+            key="video",
             desired_playing_state=True,
             mode=WebRtcMode.SENDRECV,
             queued_audio_frames_callback=queued_audio_frames_callback,
@@ -1382,8 +1382,27 @@ async def main():
             video_processor_factory=VideoTransformer,
             async_processing=True, # Streamlitアプリの応答性を保つため非同期処理を推奨  
         )
-    if not webrtc_ctx.state.playing :
-        st.sidebar.warning("Webカメラを開始してください。")
+        st.header("Audio Input Stream")
+        amp_indicator = st.sidebar.empty() # 音声振幅表示用
+        webrtc_ctx_audio = webrtc_streamer(
+            key="audio",
+            desired_playing_state=True,
+            mode=WebRtcMode.SENDONLY,
+            queued_audio_frames_callback=queued_audio_frames_callback,
+            rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
+                                            {"urls": ["stun:stun1.l.google.com:19302"]},
+                                            {"urls": ["stun:stun2.l.google.com:19302"]},
+                                            ]},
+            media_stream_constraints={"video": False, "audio": True},
+            async_processing=True,
+            # video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
+        )
+
+    
+    #if not webrtc_ctx.state.playing :
+        #st.sidebar.warning("Webカメラを開始してください。")
+    if not webrtc_ctx.state.playing or not webrtc_ctx_audio.state.playing:
+        st.sidebar.warning("Webカメラとマイクを開始してください。")    
         return
     # --- 初期化 ---
     if "messages" not in st.session_state:
@@ -1454,7 +1473,7 @@ async def main():
     st.session_state.output_method = st.sidebar.radio("出力方法:", ("テキスト", "音声"), index=0 if st.session_state.output_method == "テキスト" else 1)
     # --- 音声入力設定を追加 ---
     #if st.session_state.input_method == "音声&テキスト":
-    amp_indicator = st.sidebar.empty() # 音声振幅表示用
+    #amp_indicator = st.sidebar.empty() # 音声振幅表示用
     st.sidebar.subheader("音声入力設定")
     st.session_state.amp_threshold = st.sidebar.slider(
         "無音振幅閾値 (小さいほど敏感):",
