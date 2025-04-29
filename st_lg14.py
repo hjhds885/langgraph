@@ -1378,7 +1378,7 @@ async def main():
                                             {"urls": ["stun:stun1.l.google.com:19302"]},
                                             {"urls": ["stun:stun2.l.google.com:19302"]},
                                             ]},
-            media_stream_constraints={"video": True, "audio": True},
+            media_stream_constraints={"video": True, "audio": False},
             video_processor_factory=VideoTransformer,
             async_processing=True, # Streamlitアプリの応答性を保つため非同期処理を推奨  
         )
