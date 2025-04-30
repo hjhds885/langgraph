@@ -1372,8 +1372,8 @@ async def main():
         webrtc_ctx = webrtc_streamer(
             key="video",
             desired_playing_state=True,
-            mode=WebRtcMode.SENDRECV,
-            queued_audio_frames_callback=queued_audio_frames_callback,
+            #mode=WebRtcMode.SENDRECV,
+            #queued_audio_frames_callback=queued_audio_frames_callback,
             rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
                                             {"urls": ["stun:stun1.l.google.com:19302"]},
                                             {"urls": ["stun:stun2.l.google.com:19302"]},
