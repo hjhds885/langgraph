@@ -2,9 +2,9 @@ import streamlit as st
 from streamlit_webrtc import (
     WebRtcMode,
     webrtc_streamer,
-    VideoHTMLAttributes,
+    #VideoHTMLAttributes,
     VideoTransformerBase,
-    ClientSettings
+    #ClientSettings
 )
 from typing import Annotated, Sequence, Optional, Literal # Literal を追加
 from typing_extensions import TypedDict
