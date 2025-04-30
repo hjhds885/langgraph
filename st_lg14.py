@@ -1372,8 +1372,8 @@ async def main():
         webrtc_ctx = webrtc_streamer(
             key="video",
             desired_playing_state=True,
-            #mode=WebRtcMode.SENDRECV,
-            #queued_audio_frames_callback=queued_audio_frames_callback,
+            mode=WebRtcMode.SENDONLY,  #SENDRECV
+            queued_audio_frames_callback=queued_audio_frames_callback,
             rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
                                             {"urls": ["stun:stun1.l.google.com:19302"]},
                                             {"urls": ["stun:stun2.l.google.com:19302"]},
@@ -1397,8 +1397,8 @@ async def main():
             async_processing=True,
             # video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
         )
-    max_retries = 10  # 最大試行回数
-    retry_delay = 3  # 待機時間（秒）
+    max_retries = 5  # 最大試行回数
+    retry_delay = 2  # 待機時間（秒）
 
     video_ready = False
     audio_ready = False
