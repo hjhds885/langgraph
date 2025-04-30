@@ -1397,8 +1397,8 @@ async def main():
             async_processing=True,
             # video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
         )
-    max_retries = 5  # 最大試行回数
-    retry_delay = 2  # 待機時間（秒）
+    max_retries = 10  # 最大試行回数
+    retry_delay = 3  # 待機時間（秒）
 
     video_ready = False
     audio_ready = False
