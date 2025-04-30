@@ -1378,36 +1378,36 @@ async def main():
                                             {"urls": ["stun:stun1.l.google.com:19302"]},
                                             {"urls": ["stun:stun2.l.google.com:19302"]},
                                             ]},
-            media_stream_constraints={"video": True, "audio": True},
+            media_stream_constraints={"video": True, "audio": False},
             video_processor_factory=VideoTransformer,
             async_processing=True, # Streamlitアプリの応答性を保つため非同期処理を推奨  
         )
         #st.header("Audio Input Stream")
         amp_indicator = st.sidebar.empty() # 音声振幅表示用
-        #webrtc_ctx_audio = webrtc_streamer(
-            #key="audio",
-            #desired_playing_state=True,
-            #mode=WebRtcMode.SENDONLY,
-            #queued_audio_frames_callback=queued_audio_frames_callback,
-            #rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
-                                            #{"urls": ["stun:stun1.l.google.com:19302"]},
-                                            #{"urls": ["stun:stun2.l.google.com:19302"]},
-                                            #]},
-            #media_stream_constraints={"video": False, "audio": True},
-            #video_processor_factory=VideoTransformer,
-            #async_processing=True,
+        webrtc_ctx_audio = webrtc_streamer(
+            key="audio",
+            desired_playing_state=True,
+            mode=WebRtcMode.SENDONLY,
+            queued_audio_frames_callback=queued_audio_frames_callback,
+            rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
+                                            {"urls": ["stun:stun1.l.google.com:19302"]},
+                                            {"urls": ["stun:stun2.l.google.com:19302"]},
+                                            ]},
+            media_stream_constraints={"video": False, "audio": True},
+            video_processor_factory=VideoTransformer,
+            async_processing=True,
             ## video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
         #)
     max_retries = 10  # 最大試行回数
     retry_delay = 3  # 待機時間（秒）
 
     video_ready = False
-    #audio_ready = False
+    audio_ready = False
 
     for i in range(max_retries):
         # 毎回 state.playing をチェック
         video_ready = webrtc_ctx.state.playing
-        #audio_ready = webrtc_ctx_audio.state.playing
+        audio_ready = webrtc_ctx_audio.state.playing
 
         if video_ready: # and audio_ready
             #st.sidebar.success("カメラとマイクの準備完了！") # 成功メッセージ (任意)
@@ -1417,7 +1417,7 @@ async def main():
         # どちらか、または両方がまだ準備できていない場合
         warning_message = []
         if not video_ready: warning_message.append("カメラ")
-        #if not audio_ready: warning_message.append("マイク")
+        if not audio_ready: warning_message.append("マイク")
         st.sidebar.warning(f"{'と'.join(warning_message)}の開始待機中... ({i+1}/{max_retries})")
         time.sleep(retry_delay) # 指定秒数待機
     else:
@@ -1427,7 +1427,7 @@ async def main():
     
     #if not webrtc_ctx.state.playing :
         #st.sidebar.warning("Webカメラを開始してください。")
-    if not webrtc_ctx.state.playing : #or not webrtc_ctx_audio.state.playing
+    if not webrtc_ctx.state.playing or not webrtc_ctx_audio.state.playing: #
         st.sidebar.warning("Webカメラとマイクを開始してください。")    
         return
     # --- 初期化 ---
