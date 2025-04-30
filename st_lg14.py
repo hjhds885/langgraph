@@ -1397,7 +1397,32 @@ async def main():
             async_processing=True,
             # video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
         )
+    max_retries = 5  # 最大試行回数
+    retry_delay = 2  # 待機時間（秒）
 
+    video_ready = False
+    audio_ready = False
+
+    for i in range(max_retries):
+        # 毎回 state.playing をチェック
+        video_ready = webrtc_ctx.state.playing
+        audio_ready = webrtc_ctx_audio.state.playing
+
+        if video_ready and audio_ready:
+            #st.sidebar.success("カメラとマイクの準備完了！") # 成功メッセージ (任意)
+            print("カメラとマイクの準備完了！") # 成功メッセージ (任意)
+            break # 両方準備できたらループを抜ける
+
+        # どちらか、または両方がまだ準備できていない場合
+        warning_message = []
+        if not video_ready: warning_message.append("カメラ")
+        if not audio_ready: warning_message.append("マイク")
+        st.sidebar.warning(f"{'と'.join(warning_message)}の開始待機中... ({i+1}/{max_retries})")
+        time.sleep(retry_delay) # 指定秒数待機
+    else:
+        # ループが最後まで実行された場合 (タイムアウト)
+        st.sidebar.error("Webカメラまたはマイクを開始できませんでした。ページをリロードしてください。")
+        return # 処理を中断
     
     #if not webrtc_ctx.state.playing :
         #st.sidebar.warning("Webカメラを開始してください。")
