@@ -1378,28 +1378,28 @@ async def main():
                                             {"urls": ["stun:stun1.l.google.com:19302"]},
                                             {"urls": ["stun:stun2.l.google.com:19302"]},
                                             ]},
-            media_stream_constraints={"video": True, "audio": False},
+            media_stream_constraints={"video": True, "audio": True},
             video_processor_factory=VideoTransformer,
             async_processing=True, # Streamlitアプリの応答性を保つため非同期処理を推奨  
         )
-        st.header("Audio Input Stream")
+        #st.header("Audio Input Stream")
         amp_indicator = st.sidebar.empty() # 音声振幅表示用
-        webrtc_ctx_audio = webrtc_streamer(
-            key="audio",
-            desired_playing_state=True,
-            mode=WebRtcMode.SENDONLY,
-            queued_audio_frames_callback=queued_audio_frames_callback,
-            rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
-                                            {"urls": ["stun:stun1.l.google.com:19302"]},
-                                            {"urls": ["stun:stun2.l.google.com:19302"]},
-                                            ]},
-            media_stream_constraints={"video": False, "audio": True},
-            video_processor_factory=VideoTransformer,
-            async_processing=True,
-            # video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
-        )
-    max_retries = 5  # 最大試行回数
-    retry_delay = 2  # 待機時間（秒）
+        #webrtc_ctx_audio = webrtc_streamer(
+            #key="audio",
+            #desired_playing_state=True,
+            #mode=WebRtcMode.SENDONLY,
+            #queued_audio_frames_callback=queued_audio_frames_callback,
+            #rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
+                                            #{"urls": ["stun:stun1.l.google.com:19302"]},
+                                            #{"urls": ["stun:stun2.l.google.com:19302"]},
+                                            #]},
+            #media_stream_constraints={"video": False, "audio": True},
+            #video_processor_factory=VideoTransformer,
+            #async_processing=True,
+            ## video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
+        #)
+    max_retries = 10  # 最大試行回数
+    retry_delay = 3  # 待機時間（秒）
 
     video_ready = False
     audio_ready = False
