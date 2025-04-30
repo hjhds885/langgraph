@@ -1387,13 +1387,14 @@ async def main():
         webrtc_ctx_audio = webrtc_streamer(
             key="audio",
             desired_playing_state=True,
-            mode=WebRtcMode.SENDRECV,
+            mode=WebRtcMode.SENDONLY,
             queued_audio_frames_callback=queued_audio_frames_callback,
             rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
                                             {"urls": ["stun:stun1.l.google.com:19302"]},
                                             {"urls": ["stun:stun2.l.google.com:19302"]},
                                             ]},
             media_stream_constraints={"video": False, "audio": True},
+            video_processor_factory=VideoTransformer,
             async_processing=True,
             # video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
         )
