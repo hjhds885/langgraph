@@ -523,15 +523,15 @@ def initialize_models():
         #######################################################################################################
         #https://ai.google.dev/gemini-api/docs/models?hl=ja&_gl=1*17qcedu*_up*MQ..*_ga*ODUwNDc5MzM2LjE3NDUxNDczNjU.*_ga_P1DBVKWT6V*MTc0NTE0NzM2NS4xLjAuMTc0NTE0NzM2NS4wLjAuMTIzMzU0MzAwMA..#gemini-2.5-pro-preview-03-25
         # Gemini モデルの場合、1 個のトークンは約 4 文字に相当します。100 個のトークンは、約 60 ～ 80 ワード（英語）です。
-        "gemini-2.5-pro-exp-03-25": (init_chat_model("google_vertexai:gemini-2.5-pro-exp-03-25", temperature=0),0,0,0,1048576), #高度なコーディング
-        "gemini_2.5_flash": (init_chat_model("google_vertexai:gemini-2.5-flash-preview-04-17", temperature=0),0.15,0,3.5,1048576),
+        #"gemini-2.5-pro-exp-03-25": (init_chat_model("google_vertexai:gemini-2.5-pro-exp-03-25", temperature=0),0,0,0,1048576), #高度なコーディング
+        #"gemini_2.5_flash": (init_chat_model("google_vertexai:gemini-2.5-flash-preview-04-17", temperature=0),0.15,0,3.5,1048576),
         #"gemini_2_flash": (init_chat_model("google_vertexai:gemini-2.0-flash", temperature=0),0,0,0,1000000), #リアルタイム ストリーミング、マルチモーダル生成
         #"gemini-1.5-pro": (init_chat_model("google_vertexai:gemini-1.5-pro", temperature=0),0,0,0,32000), #200 万トークン　無料 32000
         #"gemini-1.5-pro": (ChatGoogleGenerativeAI(model="gemini-1.5-pro",temperature=0,max_retries=2),0,0,0,32000), #img,tool(1つだけ？) OK
         #有料:
-        "gpt-4.1-mini": (init_chat_model("openai:gpt-4.1-mini") , 0.4,0.1,1.6,1047576), #コスパ良い
-        "o4-mini": (init_chat_model("openai:o4-mini"),1.1,0.275,4.4,200000), #コスパ良い
-        "gpt-4.1": (init_chat_model("openai:gpt-4.1"),2.0,0.5,8.0,1047576), #gpt-4oより安い
+        #"gpt-4.1-mini": (init_chat_model("openai:gpt-4.1-mini") , 0.4,0.1,1.6,1047576), #コスパ良い
+        #"o4-mini": (init_chat_model("openai:o4-mini"),1.1,0.275,4.4,200000), #コスパ良い
+        #"gpt-4.1": (init_chat_model("openai:gpt-4.1"),2.0,0.5,8.0,1047576), #gpt-4oより安い
         #"gpt-4o": (init_chat_model("openai:gpt-4o"),2.5,1.25,10,128000), #3月に9.132$(1370円)
         #廃版 "gpt4r5": init_chat_model("openai:gpt-4.5-preview"), #3/15ごろに5.254$(788円)
         #高額すぎる "o1": (init_chat_model("openai:o1"), 15,7.5,60,200000), #3/15ごろに8.921$(1338円)
@@ -551,7 +551,7 @@ def initialize_models():
         ###################################################################################
         #2.1 ツール非対応のマルチモーダルモデルとして動作 imgのみOK,
         #百名山標高順回答不正解、only 4 image(s) can be used per conversation
-        "c4ai-aya-vision-32b":(init_chat_model("c4ai-aya-vision-32b", model_provider="cohere"),0,0,0,16000), #コンテキストの長さ: 16K、
+        #"c4ai-aya-vision-32b":(init_chat_model("c4ai-aya-vision-32b", model_provider="cohere"),0,0,0,16000), #コンテキストの長さ: 16K、
         #Groqのならツール対応 "meta/llama-4-maverick-17b-128e-instruct":(init_chat_model("meta/llama-4-maverick-17b-128e-instruct", model_provider="nvidia"),0,0,0,1000000), #not known to support tools
         ################################################################################## 
     }
