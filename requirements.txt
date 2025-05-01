@@ -60,9 +60,6 @@ nest-asyncio==1.5.8
 replicate==1.0.1
 keyboard==0.13.5
 pyttsx3==2.91
-torch==2.6.0
-torchaudio==2.6.0
-torchvision==0.21.0
 pydantic==2.10.6
 pydantic_core==2.27.2
 pydantic-settings==2.5.2
@@ -71,3 +68,6 @@ newsapi==0.1.1
 newsapi-python==0.2.7
 exa-py==1.9.1
 wolframalpha==5.0.0
+torch==2.6.0
+torchaudio==2.6.0
+torchvision==0.21.0
