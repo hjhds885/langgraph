@@ -98,30 +98,33 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List,Tuple
 import requests
 #import html2text
-
-# streamlit cloudの環境変数にAPIキーなどを設定 (必要であれば)
-os.environ["OPENWEATHERMAP_API_KEY"] = st.secrets.key["OPENWEATHERMAP_API_KEY"]
-os.environ["SERPAPI_API_KEY"] = st.secrets.key["SERPAPI_API_KEY"]
-os.environ["EXA_API_KEY"] = st.secrets.key["EXA_API_KEY"]
-os.environ["NEWSAPI_API_KEY"] = st.secrets.key["NEWSAPI_API_KEY"]
-os.environ["OPENAI_API_KEY"] = st.secrets.key["OPENAI_API_KEY"]
-os.environ["ANTHROPIC_API_KEY"] = st.secrets.key["ANTHROPIC_API_KEY"]
-os.environ["GOOGLE_API_KEY"] = st.secrets.key["GOOGLE_API_KEY"]
-os.environ["COHERE_API_KEY"] = st.secrets.key["COHERE_API_KEY"]
-os.environ["NVIDIA_API_KEY"] = st.secrets.key["NVIDIA_API_KEY"]
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets.key["HUGGINGFACEHUB_API_TOKEN"]
-os.environ["LANGSMITH_API_KEY"] = st.secrets.key["LANGSMITH_API_KEY"]
-os.environ["WOLFRAM_ALPHA_APPID"] = st.secrets.key["WOLFRAM_ALPHA_APPID"]
-os.environ["LANGCHAIN_API_KEY"] = st.secrets.key["LANGCHAIN_API_KEY"]
-os.environ["GOOGLE_CLOUD_PROJECT"] = st.secrets.key["GOOGLE_CLOUD_PROJECT"]
-os.environ["GROQ_API_KEY"] = st.secrets.key["GROQ_API_KEY"]
-os.environ["FIREWORKS_API_KEY"] = st.secrets.key["FIREWORKS_API_KEY"]
-os.environ["MISTRAL_API_KEY"] = st.secrets.key["MISTRAL_API_KEY"]
-os.environ["TOGETHER_API_KEY"] = st.secrets.key["TOGETHER_API_KEY"]
-os.environ["SEARCHAPI_API_KEY"] = st.secrets.key["SEARCHAPI_API_KEY"]
-os.environ["METAPHOR_API_KEY"] = st.secrets.key["METAPHOR_API_KEY"]
-os.environ["TAVILY_API_KEY"] = st.secrets.key["TAVILY_API_KEY"]
-os.environ["USER_AGENT"] = st.secrets.key["USER_AGENT"]
+try:
+    # streamlit cloudの環境変数にAPIキーなどを設定 (必要であれば)
+    os.environ["OPENWEATHERMAP_API_KEY"] = st.secrets.key["OPENWEATHERMAP_API_KEY"]
+    os.environ["SERPAPI_API_KEY"] = st.secrets.key["SERPAPI_API_KEY"]
+    os.environ["EXA_API_KEY"] = st.secrets.key["EXA_API_KEY"]
+    os.environ["NEWSAPI_API_KEY"] = st.secrets.key["NEWSAPI_API_KEY"]
+    os.environ["OPENAI_API_KEY"] = st.secrets.key["OPENAI_API_KEY"]
+    os.environ["ANTHROPIC_API_KEY"] = st.secrets.key["ANTHROPIC_API_KEY"]
+    os.environ["GOOGLE_API_KEY"] = st.secrets.key["GOOGLE_API_KEY"]
+    os.environ["COHERE_API_KEY"] = st.secrets.key["COHERE_API_KEY"]
+    os.environ["NVIDIA_API_KEY"] = st.secrets.key["NVIDIA_API_KEY"]
+    os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets.key["HUGGINGFACEHUB_API_TOKEN"]
+    os.environ["LANGSMITH_API_KEY"] = st.secrets.key["LANGSMITH_API_KEY"]
+    os.environ["WOLFRAM_ALPHA_APPID"] = st.secrets.key["WOLFRAM_ALPHA_APPID"]
+    os.environ["LANGCHAIN_API_KEY"] = st.secrets.key["LANGCHAIN_API_KEY"]
+    os.environ["GOOGLE_CLOUD_PROJECT"] = st.secrets.key["GOOGLE_CLOUD_PROJECT"]
+    os.environ["GROQ_API_KEY"] = st.secrets.key["GROQ_API_KEY"]
+    os.environ["FIREWORKS_API_KEY"] = st.secrets.key["FIREWORKS_API_KEY"]
+    os.environ["MISTRAL_API_KEY"] = st.secrets.key["MISTRAL_API_KEY"]
+    os.environ["TOGETHER_API_KEY"] = st.secrets.key["TOGETHER_API_KEY"]
+    os.environ["SEARCHAPI_API_KEY"] = st.secrets.key["SEARCHAPI_API_KEY"]
+    os.environ["METAPHOR_API_KEY"] = st.secrets.key["METAPHOR_API_KEY"]
+    os.environ["TAVILY_API_KEY"] = st.secrets.key["TAVILY_API_KEY"]
+    os.environ["USER_AGENT"] = st.secrets.key["USER_AGENT"]
+except:
+    print("streamlit cloudではなくローカルPCでの起動")
+    pass 
 # Toolの設定をまとめて行う関数
 def setup_tools():
     ######################################################
@@ -348,31 +351,6 @@ def setup_tools():
                     search_result_text = "Web検索で関連情報が見つかりませんでした。" # 最終的なフォールバックメッセージ
 
             return search_result_text
-
-    
-    def bk_search_q(query):
-        """Google検索を実行し、検索結果のテキストスニペットのリストを返す関数"""
-        params = {
-            "api_key": os.environ["SERPAPI_API_KEY"],
-            "engine": "google",
-            "q": query,
-            "location": "Komatsu, Ishikawa, Japan",
-            "google_domain": "google.com",
-            "gl": "jp",
-            "hl": "ja"
-        }
-        try:
-            search = GoogleSearch(params)
-            results = search.get_dict()
-            # 検索結果から関連性の高いテキスト情報 (スニペット) を抽出
-            snippets = [item.get('snippet', '') for item in results.get('organic_results', []) if item.get('snippet')]
-            #print(snippets)
-            if not snippets:
-                print("Warning: No snippets found in search results.")
-            return snippets
-        except Exception as e:
-            print(f"Error during search: {e}")
-            return [] # エラー時は空のリストを返す
 
     class SerperInput(BaseModel):
         """GoogleSerper の入力."""
@@ -918,7 +896,8 @@ async def process_audio(audio_data_bytes, sample_rate, sound_chunk):
         answer2 = transcribe(sound_chunk)
     return answer2
 
-async def process_audio_loop_with_silence_detection(
+#async 
+def process_audio_loop_with_silence_detection(
     frames_deque_lock,
     frames_deque,
     sound_chunk,
@@ -963,7 +942,8 @@ async def process_audio_loop_with_silence_detection(
         if silence_detected and audio_buffer:
             audio_data = np.concatenate(audio_buffer).tobytes()
             try:
-                answer2 = await process_audio(audio_data, st.session_state.frame_sample_rate, sound_chunk)
+                #answer2 = await process_audio(audio_data, st.session_state.frame_sample_rate, sound_chunk)
+                answer2 = asyncio.run(process_audio(audio_data, st.session_state.frame_sample_rate, sound_chunk)) # await を asyncio.run に変更
                 ##########################################################
                 #text_output.write(f"認識結果: {answer}")
                 #おかしな回答を除去
@@ -1335,9 +1315,12 @@ class VideoTransformer(VideoTransformerBase):
     def recv(self, frame):
         self.frame = frame.to_ndarray(format="bgr24")
         return frame
-
+    def get_frame(self):
+        with self._lock:
+            return self.frame.copy() if self.frame is not None else None
 # --- Streamlit アプリ本体 ---
-async def main():
+#async 
+def main():
     st.set_page_config(
         page_title="Yas Chatbot",
         page_icon="🤖",
@@ -1369,45 +1352,49 @@ async def main():
     # サイドバーにWebRTCストリームを表示
     with st.sidebar:
         st.header("Webcam Stream")
-        webrtc_ctx = webrtc_streamer(
-            key="video",
-            desired_playing_state=True,
-            mode=WebRtcMode.SENDRECV,  #SENDRECV
-            queued_audio_frames_callback=queued_audio_frames_callback,
-            rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
-                                            {"urls": ["stun:stun1.l.google.com:19302"]},
-                                            {"urls": ["stun:stun2.l.google.com:19302"]},
-                                            ]},
-            media_stream_constraints={"video": True, "audio": False},
-            video_processor_factory=VideoTransformer,
-            async_processing=True, # Streamlitアプリの応答性を保つため非同期処理を推奨  
-        )
-        #st.header("Audio Input Stream")
         amp_indicator = st.sidebar.empty() # 音声振幅表示用
-        webrtc_ctx_audio = webrtc_streamer(
-            key="audio",
+        webrtc_ctx = webrtc_streamer(
+            key="video and audio",
             desired_playing_state=True,
-            mode=WebRtcMode.SENDONLY,
+            mode=WebRtcMode.SENDRECV,   #SENDONLY
             queued_audio_frames_callback=queued_audio_frames_callback,
             rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
                                             {"urls": ["stun:stun1.l.google.com:19302"]},
                                             {"urls": ["stun:stun2.l.google.com:19302"]},
                                             ]},
-            media_stream_constraints={"video": False, "audio": True},
+            media_stream_constraints={"video": True, "audio": True},  #False
             video_processor_factory=VideoTransformer,
-            async_processing=True,
-            ## video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
+            #video_processor_factory=lambda: video_transformer,
+            async_processing=True, # Streamlitアプリの応答性を保つため非同期処理を推奨
         )
+        # st.header("Audio Input Stream")
+        # amp_indicator = st.sidebar.empty() # 音声振幅表示用
+        # webrtc_ctx_audio = webrtc_streamer(
+        #     key="audio",
+        #     desired_playing_state=True,
+        #     mode=WebRtcMode.SENDONLY,
+        #     queued_audio_frames_callback=queued_audio_frames_callback,
+        #     rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
+        #                                     {"urls": ["stun:stun1.l.google.com:19302"]},
+        #                                     {"urls": ["stun:stun2.l.google.com:19302"]},
+        #                                     ]},
+        #     media_stream_constraints={"video": False, "audio": True},
+        #     async_processing=True,
+        #     # video_html_attrs={"style": {"display": "none"}} # 音声のみなので非表示
+        # )
+        #st.header("Audio Input Stream")
+        #amp_indicator = st.sidebar.empty() # 音声振幅表示用
+        
     max_retries = 10  # 最大試行回数
     retry_delay = 3  # 待機時間（秒）
 
     video_ready = False
-    audio_ready = False
+    #audio_ready = False
 
     for i in range(max_retries):
         # 毎回 state.playing をチェック
         video_ready = webrtc_ctx.state.playing
-        audio_ready = webrtc_ctx_audio.state.playing
+        #audio_ready = webrtc_ctx_audio.state.playing
 
         if video_ready: # and audio_ready
             #st.sidebar.success("カメラとマイクの準備完了！") # 成功メッセージ (任意)
@@ -1416,8 +1403,8 @@ async def main():
 
         # どちらか、または両方がまだ準備できていない場合
         warning_message = []
-        if not video_ready: warning_message.append("カメラ")
-        if not audio_ready: warning_message.append("マイク")
+        if not video_ready: warning_message.append("カメラorマイク")
+        #if not audio_ready: warning_message.append("マイク")
         st.sidebar.warning(f"{'と'.join(warning_message)}の開始待機中... ({i+1}/{max_retries})")
         time.sleep(retry_delay) # 指定秒数待機
     else:
@@ -1427,7 +1414,7 @@ async def main():
     
     #if not webrtc_ctx.state.playing :
         #st.sidebar.warning("Webカメラを開始してください。")
-    if not webrtc_ctx.state.playing or not webrtc_ctx_audio.state.playing: #
+    if not webrtc_ctx.state.playing: # or not webrtc_ctx_audio.state.playing: #
         st.sidebar.warning("Webカメラとマイクを開始してください。")    
         return
     # --- 初期化 ---
@@ -1759,7 +1746,8 @@ async def main():
         status_indicator.write("🎤 何か話してください...又は以下にテキストを入力してください。")
         sound_chunk = pydub.AudioSegment.empty()
         #recognized_text = asyncio.run(process_audio_loop_with_silence_detection(
-        recognized_text = await process_audio_loop_with_silence_detection( # ★ asyncio.run を await に変更
+        #recognized_text = await process_audio_loop_with_silence_detection( # ★ asyncio.run を await に変更
+        recognized_text = process_audio_loop_with_silence_detection(
             frames_deque_lock,
             frames_deque,
             sound_chunk,
@@ -1925,8 +1913,8 @@ async def main():
                             #asyncio.run(streaming_text_speak(full_response))
                             # await を削除し asyncio.run() を使用
                             # 音声出力時は full_response を使う
-                            await streaming_text_speak(full_response)
-                            #asyncio.run(streaming_text_speak(full_response)) # Streamlitのメインスレッドで非同期関数を実行する場合
+                            #await streaming_text_speak(full_response)
+                            asyncio.run(streaming_text_speak(full_response)) # Streamlitのメインスレッドで非同期関数を実行する場合
 
                     else:
                         # ストリームから最終応答を取得できなかった場合のフォールバック処理
@@ -1945,8 +1933,8 @@ async def main():
                                         st.info("状態から最終応答を復元しました。")
                                         # --- 音声出力 ---
                                         if st.session_state.output_method == "音声":
-                                            await streaming_text_speak(full_response)
-                                            #asyncio.run(streaming_text_speak(full_response)) 
+                                            #await streaming_text_speak(full_response)
+                                            asyncio.run(streaming_text_speak(full_response)) 
                                             # await を削除し asyncio.run() を使用
                                             #await streaming_text_speak(full_response)
                                         break
@@ -1995,7 +1983,7 @@ async def main():
     
 # --- main 関数の呼び出し ---
 if __name__ == "__main__":
-    #main()
-    asyncio.run(main()) # ★ main 関数を asyncio.run で実行
+    main()
+    #asyncio.run(main()) # ★ main 関数を asyncio.run で実行
     #await main()
     #st.rerun()
