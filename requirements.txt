@@ -64,7 +64,6 @@ pydantic==2.10.6
 pydantic_core==2.27.2
 pydantic-settings==2.5.2
 metaphor-python==0.1.23
-newsapi==0.1.1
 newsapi-python==0.2.7
 exa-py==1.9.1
 wolframalpha==5.0.0
