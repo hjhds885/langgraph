@@ -349,6 +349,11 @@ async def query_llm(user_input,img_url,memory):
     print("model_name=",st.session_state.model_name)
     if "pixtral" in st.session_state.model_name:
         tools =openai_tools
+        
+    st.write("LLM:", type(st.session_state.llm))
+    st.write("Tools:", tools)
+    st.write("Memory:", type(memory))
+    
     agent_executor = create_react_agent(st.session_state.llm, tools, checkpointer=memory)
 
     # もしまだ session_state に message_history がない場合、空のリストを初期化
